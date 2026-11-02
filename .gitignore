@@ -1,7 +1,11 @@
 # Datos y modelos: se versionan con DVC, nunca con Git
 /kaggle
-/data/*
-!/data/*.dvc
+/data/history
+/data/inbox
+/data/lake
+/data/features
+/data/forecasts
+/data/quarantine
 /models
 /reports/ingestion
 /reports/monitoring/monitoring_asof_*.csv
