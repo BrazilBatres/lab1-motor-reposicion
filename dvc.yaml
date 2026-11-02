@@ -1,0 +1,16 @@
+stages:
+  bootstrap:
+    cmd: python -c "import sys; sys.path.insert(0, 'src'); from lab1.cli import main; main(['bootstrap'])"
+    deps:
+      - kaggle/train.csv
+      - kaggle/stores.csv
+      - kaggle/holidays_events.csv
+      - kaggle/oil.csv
+      - kaggle/transactions.csv
+      - src/lab1/simulate.py
+    params:
+      - config/params.yaml:
+          - simulation
+    outs:
+      - data/history
+      - data/inbox

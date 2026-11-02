@@ -1,0 +1,70 @@
+# Configuración versionada del producto. Cambiar valores aquí cambia el
+# comportamiento sin tocar código (en particular, los costos -> pedido sugerido).
+
+paths:
+  kaggle_dir: kaggle            # archivos originales de Kaggle (no versionados en Git)
+  history_dir: data/history     # carga histórica inicial (parquet)
+  inbox_dir: data/inbox         # bandeja que simula el sistema de origen (solo lectura para el flujo)
+  lake_dir: data/lake           # archivos de la bandeja ya validados (bitemporal)
+  quarantine_dir: data/quarantine
+  models_dir: models
+  features_dir: data/features
+  forecasts_dir: data/forecasts # pronósticos y pedidos publicados (inmutables por fecha de corte)
+  reports_dir: reports
+
+simulation:
+  history_end: "2017-05-31"     # último día de la carga histórica
+  inbox_start: "2017-06-01"
+  inbox_end: "2017-08-15"
+  seed: 42
+  # Retraso (días) entre la fecha del dato y su llegada a la bandeja
+  lag_days:
+    sales: 1
+    transactions: 3
+    holidays: -30               # negativo = se publica por adelantado
+  oil_weekly_arrival_weekday: 0 # el petróleo llega en lote cada lunes (semana anterior)
+  correction_rate: 0.08         # fracción de días de ventas que reciben una corrección (v2)
+  correction_delay_days: 4
+  inject_invalid_files: true    # inyecta archivos inválidos para demostrar la cuarentena
+
+forecast:
+  horizon_days: 14
+  order_coverage_days: 7        # el pedido semanal cubre los primeros N días del horizonte
+  cutoff_weekday: 0             # lunes
+  quantiles: [0.1, 0.25, 0.5, 0.75, 0.9]
+
+# Costos unitarios de negocio por grupo de familias.
+# underage = costo de quedarse sin producto (venta perdida)
+# overage  = costo de merma / sobrante
+costs:
+  perishable:
+    underage: 1.0
+    overage: 1.5
+    families: [PRODUCE, DAIRY, MEATS, POULTRY, SEAFOOD, BREAD/BAKERY, DELI, EGGS, FROZEN FOODS, "PREPARED FOODS"]
+  default:
+    underage: 2.0
+    overage: 0.5
+
+model:
+  train_weeks: 16               # cuántas fechas de corte semanales se usan para entrenar
+  retrain_every_weeks: 4
+  backtest_folds: 3             # validación temporal (rolling origin), igual para todos los modelos
+  lgbm:
+    n_estimators: 150
+    learning_rate: 0.1
+    num_leaves: 63
+    min_child_samples: 50
+    subsample: 0.8
+    subsample_freq: 1
+    colsample_bytree: 0.8
+    seed: 42
+    n_jobs: 4
+
+champion_policy:
+  # El retador reemplaza al vigente solo si reduce el costo de negocio en al menos
+  # este porcentaje Y no empeora el WAPE más de la tolerancia.
+  min_business_cost_improvement: 0.02
+  max_wape_degradation: 0.01
+
+repro:
+  cutoff: "2017-07-03"          # fecha de corte usada para demostrar la reproducción con DVC
