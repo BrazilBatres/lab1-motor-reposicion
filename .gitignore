@@ -1,0 +1,17 @@
+# Datos y modelos: se versionan con DVC, nunca con Git
+/kaggle
+/data/*
+!/data/*.dvc
+/models
+/reports/ingestion
+/reports/monitoring/monitoring_asof_*.csv
+
+# Entorno
+.venv/
+.tmp/
+__pycache__/
+*.pyc
+.pytest_cache/
+.env
+logs/
+*.pdf

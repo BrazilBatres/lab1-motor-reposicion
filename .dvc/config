@@ -1,0 +1,5 @@
+[core]
+    remote = local
+    autostage = true
+['remote "local"']
+    url = D:/dvc-remote-lab1
