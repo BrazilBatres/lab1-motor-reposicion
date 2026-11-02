@@ -1,7 +1,7 @@
 """Semanal (lunes): pronóstico por cuantiles y pedido sugerido con la información disponible al corte."""
 from airflow.sdk import dag, task
 
-from _common import DEFAULT_ARGS, END, START
+from lab1.dag_config import DEFAULT_ARGS, END, START
 
 
 @dag(dag_id="lab1_pronostico_pedido", schedule="0 6 * * 1", start_date=START, end_date=END,

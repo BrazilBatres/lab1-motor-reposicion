@@ -1,7 +1,7 @@
 """Diario: compara los pronósticos publicados con las ventas reales (incluye correcciones)."""
 from airflow.sdk import dag, task
 
-from _common import DEFAULT_ARGS, END, START
+from lab1.dag_config import DEFAULT_ARGS, END, START
 
 
 @dag(dag_id="lab1_seguimiento", schedule="0 12 * * *", start_date=START, end_date=END,

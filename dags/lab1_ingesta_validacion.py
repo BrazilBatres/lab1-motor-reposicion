@@ -1,7 +1,7 @@
 """Ingesta diaria: valida los archivos llegados a la bandeja, cuarentena de inválidos y prepara datos."""
 from airflow.sdk import dag, task
 
-from _common import DEFAULT_ARGS, END, START
+from lab1.dag_config import DEFAULT_ARGS, END, START
 
 
 @dag(dag_id="lab1_ingesta_validacion", schedule="0 0 * * *", start_date=START, end_date=END,

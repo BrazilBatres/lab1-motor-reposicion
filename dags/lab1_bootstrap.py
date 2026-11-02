@@ -1,7 +1,7 @@
 """Construye la carga histórica y la bandeja simulada a partir de los archivos de Kaggle (manual)."""
 from airflow.sdk import dag, task
 
-from _common import DEFAULT_ARGS
+from lab1.dag_config import DEFAULT_ARGS
 
 
 @dag(dag_id="lab1_bootstrap", schedule=None, catchup=False, default_args=DEFAULT_ARGS,

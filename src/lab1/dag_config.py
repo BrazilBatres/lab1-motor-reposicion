@@ -1,4 +1,4 @@
-"""Utilidades compartidas por los DAGs. Los DAGs solo orquestan: la lógica vive en src/lab1."""
+"""Configuración compartida por los DAGs (fechas y argumentos por defecto) leída de params.yaml."""
 from __future__ import annotations
 
 from datetime import timedelta
