@@ -121,7 +121,7 @@ def ingest(run_date: str | pd.Timestamp, params: dict | None = None) -> dict:
         if errors:
             qfile.parent.mkdir(parents=True, exist_ok=True)
             qfile.write_text(json.dumps({"file": f.path.name, "arrival": f"{f.arrival:%Y-%m-%d}",
-                                         "errors": errors}, ensure_ascii=False, indent=1), encoding="utf-8")
+                                         "errors": errors}, ensure_ascii=False, indent=1), encoding="utf-8", newline="\n")
             report["quarantined"].append({"file": f.path.name, "errors": errors})
             continue
         df["date"] = pd.to_datetime(df["date"])
@@ -135,7 +135,7 @@ def ingest(run_date: str | pd.Timestamp, params: dict | None = None) -> dict:
     rdir = path(params, "reports_dir") / "ingestion"
     rdir.mkdir(parents=True, exist_ok=True)
     (rdir / f"{run_date:%Y-%m-%d}.json").write_text(json.dumps(report, ensure_ascii=False, indent=1),
-                                                     encoding="utf-8")
+                                                     encoding="utf-8", newline="\n")
     return report
 
 

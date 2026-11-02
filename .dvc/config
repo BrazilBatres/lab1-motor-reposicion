@@ -1,5 +1,7 @@
 [core]
-    remote = local
     autostage = true
-['remote "local"']
-    url = D:/dvc-remote-lab1
+    remote = dagshub
+['remote "dagshub"']
+    url = https://dagshub.com/BrazilBatres/lab1-motor-reposicion.dvc
+    auth = basic
+    user = BrazilBatres
