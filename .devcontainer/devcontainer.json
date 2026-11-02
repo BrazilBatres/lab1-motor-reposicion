@@ -1,0 +1,8 @@
+{
+  "name": "lab1-airflow",
+  "image": "mcr.microsoft.com/devcontainers/universal:2",
+  "hostRequirements": { "cpus": 4, "memory": "16gb" },
+  "features": { "ghcr.io/devcontainers/features/docker-in-docker:2": {} },
+  "forwardPorts": [8080],
+  "portsAttributes": { "8080": { "label": "Airflow UI" } }
+}
