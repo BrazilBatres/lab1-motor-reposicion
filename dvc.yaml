@@ -12,5 +12,10 @@ stages:
       - config/params.yaml:
           - simulation
     outs:
-      - data/history
-      - data/inbox
+      # Derivados directos de los archivos de Kaggle: se versionan por hash pero NO se suben al
+      # remoto público (las reglas de Kaggle no permiten redistribuir los datos). Se regeneran con
+      # `dvc repro bootstrap` a partir de los CSV que coloca cada usuario en kaggle/.
+      - data/history:
+          push: false
+      - data/inbox:
+          push: false

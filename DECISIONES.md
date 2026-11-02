@@ -103,13 +103,24 @@ criterio; si no, se mantiene el vigente. Cada decisión queda en `models/<id>/me
 
 ## 6. Versionado
 
-**D22. DVC** versiona: `kaggle/` (entrada original), `data/history` y `data/inbox` (salidas de la etapa
-`bootstrap` en `dvc.yaml`), `data/lake` y `data/features` (procesados), `models/` y `data/forecasts/`
-(publicados). Los reportes pequeños (`reports/*.csv`) van en Git como evidencia legible.
+**D22. DVC** versiona: `kaggle/` (entrada original, como dependencia de `bootstrap` en `dvc.lock`),
+`data/history` y `data/inbox` (salidas de `bootstrap`), `data/lake`, `data/features` y `data/quarantine`
+(procesados), `models/` y `data/forecasts/` (publicados). Las salidas versionadas son las de la corrida
+en Airflow (contenedor Linux), el entorno oficial del producto. Los reportes de métricas pequeños
+(`reports/*.csv`) van en Git como evidencia legible; los pedidos y pronósticos publicados solo en DVC.
 
-**D23. Remoto DVC local** (`D:/dvc-remote-lab1`) por restricción de tiempo; para un equipo se cambiaría a
-S3/DagsHub con `dvc remote modify`. El producto completo también se reconstruye desde los CSV de Kaggle
-(el flujo es determinista).
+**D23. Remoto DVC en DagsHub, sin redistribuir datos de Kaggle.** Las reglas de la competencia no permiten
+redistribuir sus datos, así que `kaggle/` y sus copias directas (`history`, `inbox`, `lake`) quedan
+fijados por hash (`push: false`) pero no se suben al remoto público; cualquiera con los CSV oficiales los
+regenera con `dvc repro bootstrap` y DVC verifica que el hash coincide. Al remoto se suben los artefactos
+propios del producto: features, cuarentena, modelos y pronósticos/pedidos publicados.
+- *Alternativas*: remoto local (no accesible para terceros, descartado); subir todo a un remoto público
+  (viola las reglas de Kaggle); remoto privado con colaboradores (requiere cuentas del equipo docente).
+- DagsHub exige un token gratuito incluso para leer; las credenciales viven en `.dvc/config.local`
+  (fuera de Git). El producto no depende de DVC para ejecutarse: con los CSV de Kaggle se reconstruye todo.
+
+**D23b. Fin de línea LF en todos los archivos generados** (`lineterminator="\n"`, `newline="\n"`): sin
+esto, Windows escribe CRLF y los mismos datos producen hashes distintos en cada plataforma.
 
 **D24. Sin Docker local**: el equipo de desarrollo no tenía espacio para Docker Desktop; Airflow se validó
 en GitHub Codespaces con el mismo `docker-compose.yaml` que usa el equipo docente.

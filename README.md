@@ -89,50 +89,85 @@ python -m lab1.cli simulate-all       # todo el periodo, día a día
 python -m pytest -q
 ```
 
+## Versionado con DVC (remoto en DagsHub)
+
+Los datos, modelos y pronósticos publicados se versionan con DVC; Git solo guarda los punteros
+(`*.dvc`, `dvc.lock`). Remoto: `https://dagshub.com/BrazilBatres/lab1-motor-reposicion.dvc`.
+
+| Qué | Cómo se versiona | ¿En el remoto? |
+|:--|:--|:--|
+| `kaggle/*.csv` (entrada original) | dependencia de la etapa `bootstrap` en `dvc.lock` (md5 de cada archivo) | No (reglas de Kaggle) |
+| `data/history`, `data/inbox` | salidas de `bootstrap` en `dvc.lock` | No: se regeneran con `dvc repro bootstrap` y DVC verifica el hash |
+| `data/lake` (archivos validados) | `data/lake.dvc` | No (copia de la bandeja); se reconstruye con la ingesta |
+| `data/features`, `data/quarantine` | `.dvc` | Sí |
+| `models/` (modelos + backtest + decisión) | `models.dvc` | Sí |
+| `data/forecasts/` (pronósticos y pedidos publicados) | `data/forecasts.dvc` | Sí |
+
+DagsHub exige un token incluso para leer repositorios públicos. Para descargar las versiones:
+
+```bash
+pip install "dvc==3.67.1"
+dvc remote modify dagshub --local auth basic
+dvc remote modify dagshub --local user <usuario_dagshub>
+dvc remote modify dagshub --local password <token_dagshub>   # dagshub.com > Settings > Tokens
+dvc pull models.dvc data/features.dvc data/forecasts.dvc data/quarantine.dvc
+dvc repro bootstrap      # con los CSV en kaggle/: regenera historia y bandeja y verifica su hash
+```
+
+El producto no depende de DVC para funcionar: con los CSV de Kaggle y Airflow se reconstruye todo
+desde cero (el flujo es determinista).
+
 ## Evidencia
+
+Toda la evidencia de esta sección proviene de la corrida completa en **Airflow 3 + Docker Compose**
+(sección 4); esas mismas salidas son las versionadas en DVC.
 
 ### 1. Comparación de modelos (validación temporal, mismos cortes para todos)
 
 Fuente: [`reports/model_comparison.csv`](reports/model_comparison.csv) (backtest del reentrenamiento del
-2017-07-31; horizonte 14 días; cada fold entrena solo con objetivos anteriores a su corte).
+2017-08-28; horizonte 14 días; cada fold entrena solo con objetivos anteriores a su corte).
 
 | Corte del fold | Modelo   | WAPE  | RMSLE | Pinball | Cobertura P10–P90 | Costo de negocio |
 |:---------------|:---------|------:|------:|--------:|------------------:|-----------------:|
-| 2017-07-17     | baseline | 0.129 | 0.429 | 22.65   | 0.696             | 1 768 550        |
-| 2017-07-17     | lgbm     | 0.126 | 0.409 | 22.03   | 0.773             | 1 652 860        |
-| 2017-07-03     | baseline | 0.122 | 0.410 | 21.97   | 0.711             | 1 716 750        |
-| 2017-07-03     | lgbm     | 0.114 | 0.383 | 20.18   | 0.815             | 1 473 920        |
-| 2017-06-19     | baseline | 0.126 | 0.430 | 22.56   | 0.710             | 1 744 650        |
-| 2017-06-19     | lgbm     | 0.120 | 0.400 | 21.67   | 0.801             | 1 527 580        |
+| 2017-08-14 | baseline | 0.131 | 0.542 | 20.53 | 0.698 | 219,201 |
+| 2017-08-14 | lgbm     | 0.112 | 0.413 | 17.55 | 0.779 | 187,249 |
+| 2017-07-31 | baseline | 0.182 | 0.535 | 33.66 | 0.634 | 2,456,175 |
+| 2017-07-31 | lgbm     | 0.166 | 0.484 | 27.47 | 0.759 | 1,987,025 |
+| 2017-07-17 | baseline | 0.129 | 0.429 | 22.65 | 0.696 | 1,768,549 |
+| 2017-07-17 | lgbm     | 0.127 | 0.410 | 22.03 | 0.777 | 1,647,883 |
+
+(El fold del 2017-08-14 solo tiene 2 días observados al momento del reentrenamiento, por eso su costo es menor.)
 
 Decisiones de reemplazo registradas (`models/<id>/meta.json`, criterio D21 de DECISIONES.md):
 
 | Reentrenamiento | Promovido | Motivo |
 |:--|:--|:--|
-| lgbm_2017-06-05 | sí | mejora costo de negocio 10.3 % vs baseline (mín. 2 %), WAPE 0.162 vs 0.169 |
-| lgbm_2017-07-03 | sí | mejora 9.5 %, WAPE 0.135 vs 0.136 |
-| lgbm_2017-07-31 | sí | mejora 11.0 %, WAPE 0.120 vs 0.126 |
+| lgbm_2017-06-05 | sí | mejora costo de negocio 11.0 % vs baseline (mín. 2 %), WAPE 0.162 vs 0.169 |
+| lgbm_2017-07-03 | sí | mejora 10.7 %, WAPE 0.135 vs 0.136 |
+| lgbm_2017-07-31 | sí | mejora 12.0 %, WAPE 0.123 vs 0.126 |
+| lgbm_2017-08-28 | sí | mejora 14.0 %, WAPE 0.135 vs 0.147 |
 
 ### 2. Seguimiento del desempeño de pronósticos publicados
 
 Fuente: [`reports/monitoring/monitoring_latest.csv`](reports/monitoring/monitoring_latest.csv)
-(as-of 2017-08-22; compara cada pronóstico publicado contra las ventas reales más recientes, incluidas
+(as-of 2017-08-28; compara cada pronóstico publicado contra las ventas reales más recientes, incluidas
 correcciones). La cobertura del intervalo P10–P90 se mantiene cerca del 80 % nominal.
 
 | Corte      | Modelo          | Días observados | WAPE  | Cobertura P10–P90 | Costo / unidad vendida |
 |:-----------|:----------------|----------------:|------:|------------------:|-----------------------:|
-| 2017-06-05 | lgbm_2017-06-05 | 14 | 0.135 | 0.798 | 0.144 |
-| 2017-06-12 | lgbm_2017-06-05 | 14 | 0.131 | 0.800 | 0.141 |
-| 2017-06-19 | lgbm_2017-06-05 | 14 | 0.121 | 0.817 | 0.128 |
-| 2017-06-26 | lgbm_2017-06-05 | 14 | 0.121 | 0.817 | 0.126 |
-| 2017-07-03 | lgbm_2017-07-03 | 14 | 0.114 | 0.826 | 0.123 |
-| 2017-07-10 | lgbm_2017-07-03 | 14 | 0.125 | 0.809 | 0.136 |
-| 2017-07-17 | lgbm_2017-07-03 | 14 | 0.129 | 0.794 | 0.142 |
-| 2017-07-24 | lgbm_2017-07-03 | 14 | 0.142 | 0.785 | 0.160 |
-| 2017-07-31 | lgbm_2017-07-31 | 14 | 0.167 | 0.775 | 0.169 |
-| 2017-08-07 | lgbm_2017-07-31 | 9  | 0.171 | 0.771 | 0.171 |
-| 2017-08-14 | lgbm_2017-07-31 | 2  | 0.121 | 0.795 | 0.124 |
+| 2017-06-05 | lgbm_2017-06-05 | 14 | 0.133 | 0.798 | 0.144 |
+| 2017-06-12 | lgbm_2017-06-05 | 14 | 0.132 | 0.798 | 0.142 |
+| 2017-06-19 | lgbm_2017-06-05 | 14 | 0.120 | 0.812 | 0.129 |
+| 2017-06-26 | lgbm_2017-06-05 | 14 | 0.120 | 0.817 | 0.128 |
+| 2017-07-03 | lgbm_2017-07-03 | 14 | 0.117 | 0.821 | 0.123 |
+| 2017-07-10 | lgbm_2017-07-03 | 14 | 0.125 | 0.805 | 0.134 |
+| 2017-07-17 | lgbm_2017-07-03 | 14 | 0.127 | 0.788 | 0.142 |
+| 2017-07-24 | lgbm_2017-07-03 | 14 | 0.141 | 0.784 | 0.159 |
+| 2017-07-31 | lgbm_2017-07-31 | 14 | 0.166 | 0.774 | 0.168 |
+| 2017-08-07 | lgbm_2017-07-31 | 9  | 0.174 | 0.769 | 0.172 |
+| 2017-08-14 | lgbm_2017-07-31 | 2  | 0.121 | 0.793 | 0.126 |
 | 2017-08-21 | lgbm_2017-07-31 | 0  | —     | —     | —     |
+| 2017-08-28 | lgbm_2017-08-28 | 0  | —     | —     | —     |
 
 Situaciones operativas observadas en la corrida (bandeja simulada):
 - `sales_2017-07-09_v1` llegó sin la columna `sales` → **cuarentena**; el corte del 2017-07-10 se emitió
@@ -143,28 +178,36 @@ Situaciones operativas observadas en la corrida (bandeja simulada):
 
 ### 3. Reproducción de un pronóstico pasado con DVC
 
-Desde un clon limpio, se recupera el pronóstico publicado del corte 2017-07-03 desde el remoto DVC, se
-borra **todo lo derivado** (lago, features, modelos, pronósticos) y se reconstruye desde la bandeja con el
-mismo código. Los hashes coinciden byte a byte (salida real, ver [`docs/repro_evidence.txt`](docs/repro_evidence.txt)):
+**a) Recuperar la versión publicada y verificar los datos de entrada** (clon limpio, salida real en
+[`docs/repro_dagshub.txt`](docs/repro_dagshub.txt)):
 
 ```
-$ git clone <repo> && cd <repo> && git checkout f3ffce0
-$ dvc pull
-545 files fetched and 537 files added
-$ sha256sum data/forecasts/cutoff=2017-07-03/forecast.csv data/forecasts/cutoff=2017-07-03/orders.csv   # publicado
-a6a58cf95c3f5f9ec6147e1a3c7494e718f46e7b11d318fd1e1113dbe35a10c1 *data/forecasts/cutoff=2017-07-03/forecast.csv
-d793de67e699adc2f3d7ada99a86eb07183a7b5a19af6d50bfbd54e0d3baa887 *data/forecasts/cutoff=2017-07-03/orders.csv
-$ rm -rf data/lake data/features data/forecasts models
-$ python -m lab1.cli weekly 2017-06-05 > /dev/null   # reconstruye el campeón vigente antes del corte
-$ python -m lab1.cli weekly 2017-07-03 > /dev/null   # ingesta as-of, reentrena y reemite el corte
-$ sha256sum data/forecasts/cutoff=2017-07-03/forecast.csv data/forecasts/cutoff=2017-07-03/orders.csv   # reproducido
-a6a58cf95c3f5f9ec6147e1a3c7494e718f46e7b11d318fd1e1113dbe35a10c1 *data/forecasts/cutoff=2017-07-03/forecast.csv
-d793de67e699adc2f3d7ada99a86eb07183a7b5a19af6d50bfbd54e0d3baa887 *data/forecasts/cutoff=2017-07-03/orders.csv
+$ git clone https://github.com/BrazilBatres/lab1-motor-reposicion.git && cd lab1-motor-reposicion
+$ dvc pull models.dvc data/features.dvc data/forecasts.dvc data/quarantine.dvc
+$ sha256sum data/forecasts/cutoff=2017-07-03/forecast.csv data/forecasts/cutoff=2017-07-03/orders.csv   # publicado por Airflow
+6aa7990b685ef9ca416679de04b41732d84e3c7871f62c9b038772e4c0f9d780  data/forecasts/cutoff=2017-07-03/forecast.csv
+015e1d4fb775c9c8740a3f95460d01d4e7ccd7cc9b7c13c627c136728799db05  data/forecasts/cutoff=2017-07-03/orders.csv
+$ dvc repro bootstrap        # regenera data/history y data/inbox desde kaggle/
+Running stage 'bootstrap':
+$ dvc status bootstrap       # los hashes coinciden con los versionados en dvc.lock
+Data and pipelines are up to date.
 ```
 
-Para reproducir cualquier otro corte publicado: `git checkout <commit>` + `dvc pull` recupera el
-pronóstico, el modelo y los datos de esa versión; re-ejecutar `python -m lab1.cli forecast <corte>`
-con los datos recuperados vuelve a producir el mismo archivo (el snapshot as-of del corte no cambia).
+**b) Reconstruir el pronóstico desde cero en el mismo entorno (imagen Docker del proyecto)**: se copian
+solo `config/`, `data/history` y `data/inbox` a un directorio vacío y se reemite el corte 2017-07-03
+(incluido el reentrenamiento del modelo vigente). Resultado idéntico byte a byte:
+
+```
+$ docker compose exec airflow-scheduler bash
+$ LAB1_ROOT=/tmp/repro python -m lab1.cli weekly 2017-06-05 > /dev/null
+$ LAB1_ROOT=/tmp/repro python -m lab1.cli weekly 2017-07-03 > /dev/null
+$ sha256sum data/forecasts/cutoff=2017-07-03/forecast.csv data/forecasts/cutoff=2017-07-03/orders.csv
+6aa7990b685ef9ca416679de04b41732d84e3c7871f62c9b038772e4c0f9d780  data/forecasts/cutoff=2017-07-03/forecast.csv
+015e1d4fb775c9c8740a3f95460d01d4e7ccd7cc9b7c13c627c136728799db05  data/forecasts/cutoff=2017-07-03/orders.csv
+```
+
+Fuera de la imagen Docker (p. ej. Windows nativo) el modelo puede diferir en decimales porque LightGBM
+no es bit a bit idéntico entre plataformas; los datos sí lo son (ver DECISIONES D25).
 
 ### 4. Ejecuciones en Airflow
 
@@ -172,7 +215,8 @@ Corrida completa desde cero con este `docker-compose.yaml` (Airflow 3.1, LocalEx
 Codespaces, siguiendo exactamente los pasos de "Levantar el producto desde cero": `lab1_bootstrap`
 manual y luego *backfill* automático de 2017-06-01 a 2017-08-29, sin intervención manual sobre los datos.
 Resultado: **90/90** runs de `lab1_ingesta_validacion`, **13/13** de `lab1_pronostico_pedido` (4
-reentrenamientos, todos promovidos) y **89/89** de `lab1_seguimiento` (corre a las 12:00; el último día del rango cae después de `end_date`).
+reentrenamientos, todos promovidos) y **89/89** de `lab1_seguimiento` (corre a las 12:00; el último día
+del rango cae después de `end_date`).
 
 | | |
 |:--|:--|
@@ -181,35 +225,6 @@ reentrenamientos, todos promovidos) y **89/89** de `lab1_seguimiento` (corre a l
 | ![Cuarentena](docs/evidencia/03_ingesta_cuarentena.jpg) | ![Reentrenamiento](docs/evidencia/04_reentrenamiento.jpg) |
 | `reporte_calidad`: el archivo con transacciones negativas va a cuarentena y el run sigue en verde | `reentrenar_si_corresponde` del 2017-07-31: modelo nuevo y decisión de promoción |
 
-Reportes generados por esa corrida de Airflow: [`reports/airflow/model_comparison.csv`](reports/airflow/model_comparison.csv)
-(backtest del reentrenamiento del 2017-08-28), [`reports/airflow/monitoring_latest.csv`](reports/airflow/monitoring_latest.csv)
-y un ejemplo de pedido sugerido: [`reports/airflow/orders_2017-08-28.csv`](reports/airflow/orders_2017-08-28.csv).
-
-| Reentrenamiento (Airflow) | Promovido | Motivo |
-|:--|:--|:--|
-| lgbm_2017-06-05 | sí | mejora costo de negocio 11.0 % vs baseline, WAPE 0.162 vs 0.169 |
-| lgbm_2017-07-03 | sí | mejora 10.7 %, WAPE 0.135 vs 0.136 |
-| lgbm_2017-07-31 | sí | mejora 12.0 %, WAPE 0.123 vs 0.126 |
-| lgbm_2017-08-28 | sí | mejora 14.0 %, WAPE 0.135 vs 0.147 |
-
-Durante esta validación aparecieron (y se corrigieron, ver historial del PR) dos problemas que solo se
+Durante esta validación aparecieron (y se corrigieron, ver historial de PRs) dos problemas que solo se
 ven en Airflow real: XCom de Airflow 3 rechaza `NaN` (el seguimiento ahora devuelve un resumen) y la CLI
 de Airflow no agrega `dags/` al `sys.path` (la configuración común vive en `lab1.dag_config`).
-
-Reproducción desde cero **dentro del contenedor de Airflow** (mismo entorno que la corrida): se copian
-solo `config/`, `data/history` y `data/inbox` a un directorio vacío y se reconstruye el corte 2017-07-03
-(incluido el reentrenamiento). Resultado idéntico al publicado por el DAG:
-
-```
-$ sha256sum (publicado por Airflow)
-6aa7990b685ef9ca416679de04b41732d84e3c7871f62c9b038772e4c0f9d780  /opt/lab1/data/forecasts/cutoff=2017-07-03/forecast.csv
-015e1d4fb775c9c8740a3f95460d01d4e7ccd7cc9b7c13c627c136728799db05  /opt/lab1/data/forecasts/cutoff=2017-07-03/orders.csv
-$ LAB1_ROOT=/tmp/repro python -m lab1.cli weekly 2017-06-05; LAB1_ROOT=/tmp/repro python -m lab1.cli weekly 2017-07-03
-$ sha256sum (reproducido desde cero)
-6aa7990b685ef9ca416679de04b41732d84e3c7871f62c9b038772e4c0f9d780  data/forecasts/cutoff=2017-07-03/forecast.csv
-015e1d4fb775c9c8740a3f95460d01d4e7ccd7cc9b7c13c627c136728799db05  data/forecasts/cutoff=2017-07-03/orders.csv
-```
-
-> Nota: los números de la corrida en Airflow (Linux, contenedor) difieren levemente de la corrida local
-> (Windows) de las secciones 1–3, porque LightGBM no es bit a bit idéntico entre plataformas. Dentro de
-> un mismo entorno el resultado sí es determinista (ver DECISIONES D25).

@@ -43,7 +43,7 @@ def main(argv=None):
         bt = modeling.backtest(ingest.as_of(d, params), d, params)
         out = path(params, "reports_dir") / "model_comparison.csv"
         out.parent.mkdir(parents=True, exist_ok=True)
-        bt.to_csv(out, index=False)
+        bt.to_csv(out, index=False, lineterminator="\n")
         res = modeling.summarize(bt).to_dict(orient="records")
     else:  # simulate-all: corre toda la bandeja día a día sin Airflow (útil para pruebas locales)
         sim = params["simulation"]

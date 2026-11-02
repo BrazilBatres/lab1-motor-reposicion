@@ -160,11 +160,11 @@ def train_and_register(cutoff: pd.Timestamp, params: dict | None = None) -> dict
     d.mkdir(parents=True, exist_ok=True)
     with open(d / "model.pkl", "wb") as fh:
         pickle.dump(model, fh)
-    bt.to_csv(d / "backtest.csv", index=False)
+    bt.to_csv(d / "backtest.csv", index=False, lineterminator="\n")
     meta = {"model_id": model_id, "method": "lgbm", "trained_asof": f"{cutoff:%Y-%m-%d}",
             "incumbent": incumbent, "promoted": promoted, "reason": reason,
             "summary": summary.round(4).to_dict(orient="records")}
-    (d / "meta.json").write_text(json.dumps(meta, indent=1, ensure_ascii=False), encoding="utf-8")
+    (d / "meta.json").write_text(json.dumps(meta, indent=1, ensure_ascii=False), encoding="utf-8", newline="\n")
     return meta
 
 

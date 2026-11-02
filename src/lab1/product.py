@@ -64,13 +64,13 @@ def forecast(cutoff: str | pd.Timestamp, params: dict | None = None) -> dict:
 
     out = path(params, "forecasts_dir") / f"cutoff={cutoff:%Y-%m-%d}"
     out.mkdir(parents=True, exist_ok=True)
-    fc.sort_values(["store_nbr", "family", "date"]).to_csv(out / "forecast.csv", index=False)
-    orders.sort_values(["store_nbr", "family"]).to_csv(out / "orders.csv", index=False)
+    fc.sort_values(["store_nbr", "family", "date"]).to_csv(out / "forecast.csv", index=False, lineterminator="\n")
+    orders.sort_values(["store_nbr", "family"]).to_csv(out / "orders.csv", index=False, lineterminator="\n")
     watermark = {s: f"{snap[s]['date'].max():%Y-%m-%d}" for s in ("sales", "transactions", "oil")}
     meta = {"cutoff": f"{cutoff:%Y-%m-%d}", "model_id": champ["model_id"], "horizon_days": H,
             "data_watermark": watermark, "params_hash": params_hash(params), "git_commit": _git_commit(),
             "rows": int(len(fc))}
-    (out / "meta.json").write_text(json.dumps(meta, indent=1), encoding="utf-8")
+    (out / "meta.json").write_text(json.dumps(meta, indent=1), encoding="utf-8", newline="\n")
     return meta
 
 
@@ -101,8 +101,8 @@ def monitor(run_date: str | pd.Timestamp, params: dict | None = None) -> pd.Data
     rep = pd.DataFrame(rows)
     rdir = path(params, "reports_dir") / "monitoring"
     rdir.mkdir(parents=True, exist_ok=True)
-    rep.to_csv(rdir / f"monitoring_asof_{run_date:%Y-%m-%d}.csv", index=False)
-    rep.to_csv(rdir / "monitoring_latest.csv", index=False)
+    rep.to_csv(rdir / f"monitoring_asof_{run_date:%Y-%m-%d}.csv", index=False, lineterminator="\n")
+    rep.to_csv(rdir / "monitoring_latest.csv", index=False, lineterminator="\n")
     return rep
 
 

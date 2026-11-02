@@ -26,8 +26,8 @@ stages:
       size: 1552637
     - path: src/lab1/simulate.py
       hash: md5
-      md5: 43f91ba8be32ebca1c7791b7bc2bfa21
-      size: 6001
+      md5: 83a06ac3e411cab858c8c06a2d9ec988
+      size: 6022
     params:
       config/params.yaml:
         simulation:
@@ -51,6 +51,6 @@ stages:
       nfiles: 5
     - path: data/inbox
       hash: md5
-      md5: 05748c47c72680494fac1f3db9f31bc8.dir
-      size: 5162694
+      md5: fb09cc29f640c1cf74d9e3a3efe264be.dir
+      size: 5010350
       nfiles: 244

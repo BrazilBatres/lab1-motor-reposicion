@@ -52,7 +52,7 @@ def _write(inbox: Path, source: str, arrival: pd.Timestamp, data_date: pd.Timest
     d.mkdir(parents=True, exist_ok=True)
     out = df.copy()
     out["date"] = out["date"].dt.strftime("%Y-%m-%d")
-    out.to_csv(d / f"{source}_{data_date:%Y-%m-%d}_v{version}.csv", index=False)
+    out.to_csv(d / f"{source}_{data_date:%Y-%m-%d}_v{version}.csv", index=False, lineterminator="\n")
 
 
 def build_inbox(raw: dict[str, pd.DataFrame], params: dict, inbox: Path) -> dict:
