@@ -1,0 +1,16 @@
+stages:
+  bootstrap:
+    cmd: python -m lab1.cli bootstrap
+    deps:
+      - kaggle/train.csv
+      - kaggle/stores.csv
+      - kaggle/holidays_events.csv
+      - kaggle/oil.csv
+      - kaggle/transactions.csv
+      - src/lab1/simulate.py
+    params:
+      - config/params.yaml:
+          - simulation
+    outs:
+      - data/history
+      - data/inbox
