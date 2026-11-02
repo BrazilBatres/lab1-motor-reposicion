@@ -1,0 +1,56 @@
+schema: '2.0'
+stages:
+  bootstrap:
+    cmd: python -c "import sys; sys.path.insert(0, 'src'); from lab1.cli import 
+      main; main(['bootstrap'])"
+    deps:
+    - path: kaggle/holidays_events.csv
+      hash: md5
+      md5: 6a71fe2fb783e8e6758a53d417b75872
+      size: 22309
+    - path: kaggle/oil.csv
+      hash: md5
+      md5: 4767ef51a4ff57e65538afa9b1c5e1b5
+      size: 20580
+    - path: kaggle/stores.csv
+      hash: md5
+      md5: 8414fbafbc7dcb33498d1a3c0cf2fda6
+      size: 1387
+    - path: kaggle/train.csv
+      hash: md5
+      md5: b84434bf8eede5345ec04e41dfe9d86e
+      size: 121800373
+    - path: kaggle/transactions.csv
+      hash: md5
+      md5: db5fa89caf46386aba0ed5bad7a403c7
+      size: 1552637
+    - path: src/lab1/simulate.py
+      hash: md5
+      md5: 43f91ba8be32ebca1c7791b7bc2bfa21
+      size: 6001
+    params:
+      config/params.yaml:
+        simulation:
+          history_end: '2017-05-31'
+          inbox_start: '2017-06-01'
+          inbox_end: '2017-08-15'
+          seed: 42
+          lag_days:
+            sales: 1
+            transactions: 3
+            holidays: -30
+          oil_weekly_arrival_weekday: 0
+          correction_rate: 0.08
+          correction_delay_days: 4
+          inject_invalid_files: true
+    outs:
+    - path: data/history
+      hash: md5
+      md5: 0f83cc9efd681cbdc4218951fd31cf30.dir
+      size: 8735831
+      nfiles: 5
+    - path: data/inbox
+      hash: md5
+      md5: 05748c47c72680494fac1f3db9f31bc8.dir
+      size: 5162694
+      nfiles: 244

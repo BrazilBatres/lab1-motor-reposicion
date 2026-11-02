@@ -1,0 +1,6 @@
+outs:
+- md5: ec3a3ca806944cd10834cef1646008e2.dir
+  size: 1634000
+  nfiles: 222
+  hash: md5
+  path: lake

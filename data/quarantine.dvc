@@ -1,0 +1,6 @@
+outs:
+- md5: a56bfdd04503cfb1923b67f1507c5dad.dir
+  size: 248
+  nfiles: 2
+  hash: md5
+  path: quarantine

@@ -1,6 +1,6 @@
 stages:
   bootstrap:
-    cmd: python -m lab1.cli bootstrap
+    cmd: python -c "import sys; sys.path.insert(0, 'src'); from lab1.cli import main; main(['bootstrap'])"
     deps:
       - kaggle/train.csv
       - kaggle/stores.csv
