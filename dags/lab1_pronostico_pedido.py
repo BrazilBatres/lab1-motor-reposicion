@@ -33,7 +33,7 @@ def pronostico():
     @task
     def seguimiento(ds=None):
         from lab1 import product
-        return product.monitor(ds).to_dict(orient="records")
+        return product.monitor_summary(product.monitor(ds))
 
     ingerir() >> preparar_features() >> reentrenar_si_corresponde() >> pronosticar_y_pedir() >> seguimiento()
 

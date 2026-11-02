@@ -15,8 +15,7 @@ def seguimiento():
     @task
     def medir_desempeno(ds=None):
         from lab1 import product
-        rep = product.monitor(ds)
-        return rep.to_dict(orient="records")
+        return product.monitor_summary(product.monitor(ds))
 
     ingerir() >> medir_desempeno()
 

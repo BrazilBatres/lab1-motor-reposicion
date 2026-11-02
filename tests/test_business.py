@@ -36,3 +36,13 @@ def test_champion_policy():
     policy = {"min_business_cost_improvement": 0.02, "max_wape_degradation": 0.01}
     assert modeling.decide(s, "baseline", "lgbm", policy)[0]
     assert not modeling.decide(s.assign(business_cost=[100.0, 99.0]), "baseline", "lgbm", policy)[0]
+
+
+def test_monitor_summary_is_json_serializable():
+    import json
+    from lab1 import product
+    rep = pd.DataFrame({"cutoff": ["2017-06-05", "2017-06-12"], "days_observed": [7, 0],
+                        "wape": [0.13, float("nan")], "coverage_10_90": [0.8, float("nan")]})
+    s = product.monitor_summary(rep)
+    json.dumps(s, allow_nan=False)
+    assert s["cortes_con_reales"] == 1 and s["ultimo_corte_evaluado"] == "2017-06-05"

@@ -104,3 +104,14 @@ def monitor(run_date: str | pd.Timestamp, params: dict | None = None) -> pd.Data
     rep.to_csv(rdir / f"monitoring_asof_{run_date:%Y-%m-%d}.csv", index=False)
     rep.to_csv(rdir / "monitoring_latest.csv", index=False)
     return rep
+
+
+def monitor_summary(rep: pd.DataFrame) -> dict:
+    """Resumen serializable (sin NaN) del seguimiento, para XCom/logs."""
+    evaluated = rep[rep["days_observed"] > 0] if len(rep) else rep
+    out = {"cortes_publicados": int(len(rep)), "cortes_con_reales": int(len(evaluated))}
+    if len(evaluated):
+        last = evaluated.iloc[-1]
+        out.update({"ultimo_corte_evaluado": str(last["cutoff"]), "wape": round(float(last["wape"]), 4),
+                    "cobertura_10_90": round(float(last["coverage_10_90"]), 4)})
+    return out
