@@ -1,0 +1,9 @@
+$ dvc pull models.dvc data/features.dvc data/forecasts.dvc data/quarantine.dvc
+Everything is up to date.
+$ sha256sum data/forecasts/cutoff=2017-07-03/forecast.csv data/forecasts/cutoff=2017-07-03/orders.csv   # publicado por Airflow (desde DagsHub)
+6aa7990b685ef9ca416679de04b41732d84e3c7871f62c9b038772e4c0f9d780 *data/forecasts/cutoff=2017-07-03/forecast.csv
+015e1d4fb775c9c8740a3f95460d01d4e7ccd7cc9b7c13c627c136728799db05 *data/forecasts/cutoff=2017-07-03/orders.csv
+$ dvc repro bootstrap   # regenera historia y bandeja desde kaggle/
+Running stage 'bootstrap':
+$ dvc status bootstrap
+Data and pipelines are up to date.
