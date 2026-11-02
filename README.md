@@ -196,6 +196,20 @@ Durante esta validación aparecieron (y se corrigieron, ver historial del PR) do
 ven en Airflow real: XCom de Airflow 3 rechaza `NaN` (el seguimiento ahora devuelve un resumen) y la CLI
 de Airflow no agrega `dags/` al `sys.path` (la configuración común vive en `lab1.dag_config`).
 
+Reproducción desde cero **dentro del contenedor de Airflow** (mismo entorno que la corrida): se copian
+solo `config/`, `data/history` y `data/inbox` a un directorio vacío y se reconstruye el corte 2017-07-03
+(incluido el reentrenamiento). Resultado idéntico al publicado por el DAG:
+
+```
+$ sha256sum (publicado por Airflow)
+6aa7990b685ef9ca416679de04b41732d84e3c7871f62c9b038772e4c0f9d780  /opt/lab1/data/forecasts/cutoff=2017-07-03/forecast.csv
+015e1d4fb775c9c8740a3f95460d01d4e7ccd7cc9b7c13c627c136728799db05  /opt/lab1/data/forecasts/cutoff=2017-07-03/orders.csv
+$ LAB1_ROOT=/tmp/repro python -m lab1.cli weekly 2017-06-05; LAB1_ROOT=/tmp/repro python -m lab1.cli weekly 2017-07-03
+$ sha256sum (reproducido desde cero)
+6aa7990b685ef9ca416679de04b41732d84e3c7871f62c9b038772e4c0f9d780  data/forecasts/cutoff=2017-07-03/forecast.csv
+015e1d4fb775c9c8740a3f95460d01d4e7ccd7cc9b7c13c627c136728799db05  data/forecasts/cutoff=2017-07-03/orders.csv
+```
+
 > Nota: los números de la corrida en Airflow (Linux, contenedor) difieren levemente de la corrida local
 > (Windows) de las secciones 1–3, porque LightGBM no es bit a bit idéntico entre plataformas. Dentro de
 > un mismo entorno el resultado sí es determinista (ver DECISIONES D25).
