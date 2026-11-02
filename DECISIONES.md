@@ -113,3 +113,9 @@ S3/DagsHub con `dvc remote modify`. El producto completo también se reconstruye
 
 **D24. Sin Docker local**: el equipo de desarrollo no tenía espacio para Docker Desktop; Airflow se validó
 en GitHub Codespaces con el mismo `docker-compose.yaml` que usa el equipo docente.
+
+**D25. Determinismo por entorno.** LightGBM se entrena con `deterministic=True`, semilla e hilos fijos, por
+lo que en un mismo entorno (misma imagen Docker / mismas versiones) re-ejecutar un corte produce el mismo
+archivo byte a byte. Entre plataformas distintas (Windows local vs. contenedor Linux) los árboles pueden
+diferir en decimales; por eso la reproducción oficial es "mismo código (commit) + mismos datos (DVC) +
+misma imagen (`docker/Dockerfile` con versiones fijadas en `requirements.txt`)".

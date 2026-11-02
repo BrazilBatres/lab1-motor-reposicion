@@ -75,7 +75,7 @@ flujo cuando su fecha de llegada es ≤ a la fecha lógica de la ejecución. Una
 Basta con que la corrección llegue a la bandeja: la ingesta diaria la valida y la incorpora; el
 seguimiento recalcula las métricas con las ventas corregidas y los siguientes cortes/reentrenamientos
 la usan. Para reprocesar un rango pasado: *Clear* de las tareas en la interfaz, o
-`airflow tasks clear lab1_seguimiento -s <inicio> -e <fin> -y`. Todas las tareas son idempotentes.
+`docker compose exec airflow-scheduler airflow tasks clear lab1_seguimiento -s <inicio> -e <fin> -y`. Todas las tareas son idempotentes.
 
 ## Ejecución local sin Airflow (desarrollo)
 
@@ -168,4 +168,34 @@ con los datos recuperados vuelve a producir el mismo archivo (el snapshot as-of 
 
 ### 4. Ejecuciones en Airflow
 
-AIRFLOW_PENDIENTE
+Corrida completa desde cero con este `docker-compose.yaml` (Airflow 3.1, LocalExecutor) en GitHub
+Codespaces, siguiendo exactamente los pasos de "Levantar el producto desde cero": `lab1_bootstrap`
+manual y luego *backfill* automático de 2017-06-01 a 2017-08-29, sin intervención manual sobre los datos.
+Resultado: **90/90** runs de `lab1_ingesta_validacion`, **13/13** de `lab1_pronostico_pedido` (4
+reentrenamientos, todos promovidos) y **89/89** de `lab1_seguimiento` (corre a las 12:00; el último día del rango cae después de `end_date`).
+
+| | |
+|:--|:--|
+| ![DAGs](docs/evidencia/01_dags.jpg) | ![Runs del pronóstico semanal](docs/evidencia/02_pronostico_pedido_runs.jpg) |
+| Los 4 DAGs, último run exitoso | 13 cortes semanales; las barras altas son los reentrenamientos |
+| ![Cuarentena](docs/evidencia/03_ingesta_cuarentena.jpg) | ![Reentrenamiento](docs/evidencia/04_reentrenamiento.jpg) |
+| `reporte_calidad`: el archivo con transacciones negativas va a cuarentena y el run sigue en verde | `reentrenar_si_corresponde` del 2017-07-31: modelo nuevo y decisión de promoción |
+
+Reportes generados por esa corrida de Airflow: [`reports/airflow/model_comparison.csv`](reports/airflow/model_comparison.csv)
+(backtest del reentrenamiento del 2017-08-28), [`reports/airflow/monitoring_latest.csv`](reports/airflow/monitoring_latest.csv)
+y un ejemplo de pedido sugerido: [`reports/airflow/orders_2017-08-28.csv`](reports/airflow/orders_2017-08-28.csv).
+
+| Reentrenamiento (Airflow) | Promovido | Motivo |
+|:--|:--|:--|
+| lgbm_2017-06-05 | sí | mejora costo de negocio 11.0 % vs baseline, WAPE 0.162 vs 0.169 |
+| lgbm_2017-07-03 | sí | mejora 10.7 %, WAPE 0.135 vs 0.136 |
+| lgbm_2017-07-31 | sí | mejora 12.0 %, WAPE 0.123 vs 0.126 |
+| lgbm_2017-08-28 | sí | mejora 14.0 %, WAPE 0.135 vs 0.147 |
+
+Durante esta validación aparecieron (y se corrigieron, ver historial del PR) dos problemas que solo se
+ven en Airflow real: XCom de Airflow 3 rechaza `NaN` (el seguimiento ahora devuelve un resumen) y la CLI
+de Airflow no agrega `dags/` al `sys.path` (la configuración común vive en `lab1.dag_config`).
+
+> Nota: los números de la corrida en Airflow (Linux, contenedor) difieren levemente de la corrida local
+> (Windows) de las secciones 1–3, porque LightGBM no es bit a bit idéntico entre plataformas. Dentro de
+> un mismo entorno el resultado sí es determinista (ver DECISIONES D25).
